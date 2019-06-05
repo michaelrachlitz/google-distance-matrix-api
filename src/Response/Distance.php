@@ -8,7 +8,7 @@ class Distance
 
     private $value;
 
-    public function __construct(string $text, int $value)
+    public function __construct(string $text = null, int $value = null)
     {
         $this->text = $text;
         $this->value = $value;

@@ -2,6 +2,8 @@
 
 namespace FinalBytes\GoogleDistanceMatrix\Response;
 
+use FinalBytes\GoogleDistanceMatrix\Exception\Exception;
+
 class GoogleDistanceMatrixResponse
 {
     const RESPONSE_STATUS_OK = 'OK';
@@ -17,7 +19,7 @@ class GoogleDistanceMatrixResponse
         self::RESPONSE_STATUS_MAX_ELEMENTS_EXCEEDED,
         self::RESPONSE_STATUS_OVER_QUERY_LIMIT,
         self::RESPONSE_STATUS_REQUEST_DENIED,
-        self::RESPONSE_STATUS_UNKNOWN_ERROR,
+        self::RESPONSE_STATUS_UNKNOWN_ERROR
     ];
 
     private $destinationAddresses;
@@ -79,10 +81,28 @@ class GoogleDistanceMatrixResponse
 
         foreach ($this->responseObject->rows as $row) {
             $elements = array();
+
+            // @todo refactor validation
             foreach ($row->elements as $element) {
-                $duration = new Duration($element->duration->text, $element->duration->value);
-                $distance = new Distance($element->distance->text, $element->distance->value);
-                $elements[] = new Element($element->status, $duration, $distance);
+
+                $status = $element->status;
+
+                /** @var boolean $zeroResults */
+                $zeroResults = ($status == Element::STATUS_ZERO_RESULTS) ? true : false;
+
+                if ($zeroResults) {
+                    $duration = new Duration();
+                    $distance = new Distance();
+                } else {
+                    $duration = new Duration($element->duration->text, $element->duration->value);
+                    $distance = new Distance($element->distance->text, $element->distance->value);
+                }
+
+                try {
+                    $elements[] = new Element($element->status, $duration, $distance);
+                } catch (Exception $e) {
+                    echo $e->getMessage();
+                }
             }
             $this->addRow(new Row($elements));
         }
